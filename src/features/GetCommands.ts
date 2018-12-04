@@ -34,6 +34,16 @@ export class GetCommandsFeature implements IFeature {
         this.commandsExplorerProvider = new CommandsExplorerProvider();
         vscode.window.registerTreeDataProvider("PowerShellCommands", this.commandsExplorerProvider);
         vscode.commands.registerCommand("PowerShell.InsertCommand", (item) => this.InsertCommand(item));
+        vscode.commands.registerCommand("PowerShell.InsertCommandsExplorer", (item) => {
+            if (this.languageClient === undefined) {
+                this.log.writeAndShowError(`<${GetCommandsFeature.name}>: ` +
+                    "Unable to instantiate; language client undefined.");
+                return;
+            }
+            this.languageClient.sendRequest(GetCommandRequestType, item.Name).then((result) => {
+                console.log(result);
+            });
+        })
     }
 
     public dispose() {

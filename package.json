@@ -73,6 +73,10 @@
         {
           "id": "PowerShellCommands",
           "name": "PowerShell Commands"
+        },
+        {
+          "id": "PowerShellPrepareCommand",
+          "name": "Prepare PowerShell Command"
         }
       ]
     },
@@ -120,6 +124,16 @@
         },
         "category": "PowerShell"
       },
+      {
+        "command": "PowerShell.InsertCommandsExplorer",
+        "title": "Insert",
+        "icon": {
+          "light": "resources/light/insert.svg",
+          "dark": "resources/light/insert.svg"
+        },
+        "category": "PowerShell"
+      },
+
       {
         "command": "PowerShell.InsertCommand",
         "title": "Insert Command",
@@ -227,7 +241,16 @@
           "when": "view == PowerShellCommands"
         },
         {
+          "command": "PowerShell.InsertCommandsExplorer",
+          "when": "view == PowerShellCommands",
+          "group": "inline@1"
+        },
+        {
           "command": "PowerShell.InsertCommand",
+          "when": "view == PowerShellCommands"
+        },
+        {
+          "command": "PowerShell.InsertCommandsExplorer",
           "when": "view == PowerShellCommands"
         }
       ]
