@@ -23,9 +23,9 @@ export class ISECompatibilityFeature implements IFeature {
 
     constructor() {
         this.iseCommand = vscode.commands.registerCommand("PowerShell.EnableISEMode",
-            () => this.EnableISEMode());
+            () => EnableISEMode());
         this.defaultCommand = vscode.commands.registerCommand("PowerShell.DisableISEMode",
-            () => this.DisableISEMode());
+            () => DisableISEMode());
     }
 
     public dispose() {
@@ -37,18 +37,18 @@ export class ISECompatibilityFeature implements IFeature {
         this.languageClient = languageclient;
     }
 
-    private EnableISEMode() {
-        this.settings.forEach(async (value) => {
-            await vscode.workspace.getConfiguration(value.section).update(value.setting, value.value, true);
-        });
-    }
+}
+function EnableISEMode() {
+    this.settings.forEach(async (value) => {
+        await vscode.workspace.getConfiguration(value.section).update(value.setting, value.value, true);
+    });
+}
 
-    private DisableISEMode() {
-        this.settings.forEach(async (value) => {
-            const currently = vscode.workspace.getConfiguration(value.section).get(value.setting);
-            if (currently === value.value) {
-                await vscode.workspace.getConfiguration(value.section).update(value.setting, undefined, true);
-            }
-        });
-    }
+function DisableISEMode() {
+    this.settings.forEach(async (value) => {
+        const currently = vscode.workspace.getConfiguration(value.section).get(value.setting);
+        if (currently === value.value) {
+            await vscode.workspace.getConfiguration(value.section).update(value.setting, undefined, true);
+        }
+    });
 }
