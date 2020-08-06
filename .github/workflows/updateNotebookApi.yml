@@ -5,7 +5,7 @@ on:
   pull_request:
   schedule:
     - cron: '*/10 * * * *'
-      if: github.repository == 'PowerShell/vscode-powershell'
+  if: github.repository == 'PowerShell/vscode-powershell'
 
 jobs:
   Update-Notebook-Api:
