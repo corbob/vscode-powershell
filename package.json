@@ -1,7 +1,7 @@
 {
   "name": "powershell-preview",
   "displayName": "PowerShell Preview",
-  "version": "2020.7.0",
+  "version": "2020.9.0",
   "preview": true,
   "publisher": "ms-vscode",
   "description": "(Preview) Develop PowerShell scripts in Visual Studio Code!",
@@ -45,35 +45,39 @@
     "onCommand:PowerShell.UnregisterExternalExtension",
     "onCommand:PowerShell.GetPowerShellVersionDetails",
     "onView:PowerShellCommands",
-    "onNotebookEditor:PowerShellNotebookMode"
+    "onNotebook:PowerShellNotebookModeDefault",
+    "onNotebookEditor:PowerShellNotebookModeDefault",
+    "onNotebook:PowerShellNotebookModeOption",
+    "onNotebookEditor:PowerShellNotebookModeOption"
   ],
   "dependencies": {
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "semver": "^7.3.2",
     "uuid": "^8.3.0",
     "vscode-extension-telemetry": "~0.1.6",
-    "vscode-languageclient": "~6.1.3"
+    "vscode-languageclient": "^7.0.0-next.9",
+    "vscode-languageserver-protocol": "^3.16.0-next.7"
   },
   "devDependencies": {
     "@types/glob": "^7.1.3",
     "@types/mocha": "~7.0.2",
     "@types/mock-fs": "~4.10.0",
-    "@types/node": "~14.0.26",
+    "@types/node": "~14.10.1",
     "@types/node-fetch": "~2.5.7",
     "@types/rewire": "~2.5.28",
-    "@types/semver": "~7.3.1",
-    "@types/sinon": "~9.0.4",
-    "@types/uuid": "^8.0.0",
+    "@types/semver": "~7.3.4",
+    "@types/sinon": "~9.0.5",
+    "@types/uuid": "^8.3.0",
     "@types/vscode": "1.44.0",
     "mocha": "~5.2.0",
     "mocha-junit-reporter": "~2.0.0",
     "mocha-multi-reporters": "~1.1.7",
-    "mock-fs": "~4.12.0",
+    "mock-fs": "~4.13.0",
     "rewire": "~5.0.0",
-    "sinon": "~9.0.2",
-    "tslint": "~6.1.2",
-    "typescript": "~3.9.7",
-    "vsce": "~1.77.0",
+    "sinon": "~9.0.3",
+    "tslint": "~6.1.3",
+    "typescript": "~4.0.2",
+    "vsce": "~1.79.5",
     "vscode-test": "~1.4.0",
     "vscode-dts": "~0.3.1"
   },
@@ -112,10 +116,21 @@
     },
     "notebookProvider": [
       {
-        "viewType": "PowerShellNotebookMode",
+        "viewType": "PowerShellNotebookModeDefault",
         "displayName": "Powershell Notebook",
         "selector": [
           {
+            "filenamePattern": "*.Notebook.ps1"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "PowerShellNotebookModeOption",
+        "displayName": "Powershell Notebook",
+        "selector": [
+          {
+            "excludeFileNamePattern": "*.Notebook.ps1",
             "filenamePattern": "*.ps1"
           }
         ],
