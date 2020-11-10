@@ -82,6 +82,27 @@ declare module 'vscode' {
 
 	export type CellOutput = CellStreamOutput | CellErrorOutput | CellDisplayOutput;
 
+	export class NotebookCellOutputItem {
+
+		readonly mime: string;
+		readonly value: unknown;
+		readonly metadata?: Record<string, string | number | boolean>;
+
+		constructor(mime: string, value: unknown, metadata?: Record<string, string | number | boolean>);
+	}
+
+	//TODO@jrieken add id?
+	export class NotebookCellOutput {
+
+		readonly outputs: NotebookCellOutputItem[];
+		readonly metadata?: Record<string, string | number | boolean>;
+
+		constructor(outputs: NotebookCellOutputItem[], metadata?: Record<string, string | number | boolean>);
+
+		//TODO@jrieken HACK to workaround dependency issues...
+		toJSON(): any;
+	}
+
 	export enum NotebookCellRunState {
 		Running = 1,
 		Idle = 2,
@@ -214,6 +235,20 @@ declare module 'vscode' {
 		runState?: NotebookRunState;
 	}
 
+	export interface NotebookDocumentContentOptions {
+		/**
+		 * Controls if outputs change will trigger notebook document content change and if it will be used in the diff editor
+		 * Default to false. If the content provider doesn't persisit the outputs in the file document, this should be set to true.
+		 */
+		transientOutputs: boolean;
+
+		/**
+		 * Controls if a meetadata property change will trigger notebook document content change and if it will be used in the diff editor
+		 * Default to false. If the content provider doesn't persisit a metadata property in the file document, it should be set to true.
+		 */
+		transientMetadata: { [K in keyof NotebookCellMetadata]?: boolean };
+	}
+
 	export interface NotebookDocument {
 		readonly uri: Uri;
 		readonly version: number;
@@ -222,6 +257,7 @@ declare module 'vscode' {
 		readonly isDirty: boolean;
 		readonly isUntitled: boolean;
 		readonly cells: ReadonlyArray<NotebookCell>;
+		readonly contentOptions: NotebookDocumentContentOptions;
 		languages: string[];
 		metadata: NotebookDocumentMetadata;
 	}
@@ -248,14 +284,14 @@ declare module 'vscode' {
 	export interface WorkspaceEdit {
 		replaceNotebookMetadata(uri: Uri, value: NotebookDocumentMetadata): void;
 		replaceNotebookCells(uri: Uri, start: number, end: number, cells: NotebookCellData[], metadata?: WorkspaceEditEntryMetadata): void;
-		replaceNotebookCellOutput(uri: Uri, index: number, outputs: CellOutput[], metadata?: WorkspaceEditEntryMetadata): void;
+		replaceNotebookCellOutput(uri: Uri, index: number, outputs: (NotebookCellOutput | CellOutput)[], metadata?: WorkspaceEditEntryMetadata): void;
 		replaceNotebookCellMetadata(uri: Uri, index: number, cellMetadata: NotebookCellMetadata, metadata?: WorkspaceEditEntryMetadata): void;
 	}
 
 	export interface NotebookEditorEdit {
 		replaceMetadata(value: NotebookDocumentMetadata): void;
 		replaceCells(start: number, end: number, cells: NotebookCellData[]): void;
-		replaceCellOutput(index: number, outputs: CellOutput[]): void;
+		replaceCellOutput(index: number, outputs: (NotebookCellOutput | CellOutput)[]): void;
 		replaceCellMetadata(index: number, metadata: NotebookCellMetadata): void;
 	}
 
@@ -306,16 +342,6 @@ declare module 'vscode' {
 		readonly viewColumn?: ViewColumn;
 
 		/**
-		 * Whether the panel is active (focused by the user).
-		 */
-		readonly active: boolean;
-
-		/**
-		 * Whether the panel is visible.
-		 */
-		readonly visible: boolean;
-
-		/**
 		 * Fired when the panel is disposed.
 		 */
 		readonly onDidDispose: Event<void>;
@@ -334,7 +360,7 @@ declare module 'vscode' {
 		 *
 		 * Messages are only delivered if the editor is live.
 		 *
-		 * @param message Body of the message. This must be a string or other json serilizable object.
+		 * @param message Body of the message. This must be a string or other json serializable object.
 		 */
 		postMessage(message: any): Thenable<boolean>;
 
@@ -493,7 +519,7 @@ declare module 'vscode' {
 		/**
 		 * Unique identifier for the backup.
 		 *
-		 * This id is passed back to your extension in `openCustomDocument` when opening a notebook editor from a backup.
+		 * This id is passed back to your extension in `openNotebook` when opening a notebook editor from a backup.
 		 */
 		readonly id: string;
 
@@ -536,7 +562,7 @@ declare module 'vscode' {
 		 *
 		 * Messages are only delivered if the editor is live.
 		 *
-		 * @param message Body of the message. This must be a string or other json serilizable object.
+		 * @param message Body of the message. This must be a string or other json serializable object.
 		 */
 		postMessage(message: any): Thenable<boolean>;
 
@@ -547,6 +573,10 @@ declare module 'vscode' {
 	}
 
 	export interface NotebookContentProvider {
+		readonly options?: NotebookDocumentContentOptions;
+		readonly onDidChangeNotebookContentOptions?: Event<NotebookDocumentContentOptions>;
+		readonly onDidChangeNotebook: Event<NotebookDocumentContentChangeEvent | NotebookDocumentEditEvent>;
+
 		/**
 		 * Content providers should always use [file system providers](#FileSystemProvider) to
 		 * resolve the raw content for `uri` as the resouce is not necessarily a file on disk.
@@ -555,7 +585,6 @@ declare module 'vscode' {
 		resolveNotebook(document: NotebookDocument, webview: NotebookCommunication): Promise<void>;
 		saveNotebook(document: NotebookDocument, cancellation: CancellationToken): Promise<void>;
 		saveNotebookAs(targetResource: Uri, document: NotebookDocument, cancellation: CancellationToken): Promise<void>;
-		readonly onDidChangeNotebook: Event<NotebookDocumentContentChangeEvent | NotebookDocumentEditEvent>;
 		backupNotebook(document: NotebookDocument, context: NotebookDocumentBackupContext, cancellation: CancellationToken): Promise<NotebookDocumentBackup>;
 	}
 
@@ -572,9 +601,11 @@ declare module 'vscode' {
 		cancelAllCellsExecution(document: NotebookDocument): void;
 	}
 
+	export type NotebookFilenamePattern = GlobPattern | { include: GlobPattern; exclude: GlobPattern };
+
 	export interface NotebookDocumentFilter {
 		viewType?: string | string[];
-		filenamePattern?: GlobPattern | { include: GlobPattern; exclude: GlobPattern };
+		filenamePattern?: NotebookFilenamePattern;
 	}
 
 	export interface NotebookKernelProvider<T extends NotebookKernel = NotebookKernel> {
@@ -628,22 +659,15 @@ declare module 'vscode' {
 		export function registerNotebookContentProvider(
 			notebookType: string,
 			provider: NotebookContentProvider,
-			options?: {
-				/**
-				 * Controls if outputs change will trigger notebook document content change and if it will be used in the diff editor
-				 * Default to false. If the content provider doesn't persisit the outputs in the file document, this should be set to true.
-				 */
-				transientOutputs: boolean;
-				/**
-				 * Controls if a meetadata property change will trigger notebook document content change and if it will be used in the diff editor
-				 * Default to false. If the content provider doesn't persisit a metadata property in the file document, it should be set to true.
-				 */
-				transientMetadata: { [K in keyof NotebookCellMetadata]?: boolean };
-
+			options?: NotebookDocumentContentOptions & {
 				/**
 				 * Not ready for production or development use yet.
 				 */
-				viewOptions?: { displayName: string; filenamePattern: GlobPattern | { include: GlobPattern; exclude: GlobPattern; }; exclusive?: boolean; };
+				viewOptions?: {
+					displayName: string;
+					filenamePattern: NotebookFilenamePattern[];
+					exclusive?: boolean;
+				};
 			}
 		): Disposable;
 
@@ -653,6 +677,7 @@ declare module 'vscode' {
 		): Disposable;
 
 		export function createNotebookEditorDecorationType(options: NotebookDecorationRenderOptions): NotebookEditorDecorationType;
+		export function openNotebookDocument(uri: Uri, viewType?: string): Promise<NotebookDocument>;
 		export const onDidOpenNotebookDocument: Event<NotebookDocument>;
 		export const onDidCloseNotebookDocument: Event<NotebookDocument>;
 		export const onDidSaveNotebookDocument: Event<NotebookDocument>;
@@ -661,14 +686,6 @@ declare module 'vscode' {
 		 * All currently known notebook documents.
 		 */
 		export const notebookDocuments: ReadonlyArray<NotebookDocument>;
-
-		export const visibleNotebookEditors: NotebookEditor[];
-		export const onDidChangeVisibleNotebookEditors: Event<NotebookEditor[]>;
-
-		export const activeNotebookEditor: NotebookEditor | undefined;
-		export const onDidChangeActiveNotebookEditor: Event<NotebookEditor | undefined>;
-		export const onDidChangeNotebookEditorSelection: Event<NotebookEditorSelectionChangeEvent>;
-		export const onDidChangeNotebookEditorVisibleRanges: Event<NotebookEditorVisibleRangesChangeEvent>;
 		export const onDidChangeNotebookDocumentMetadata: Event<NotebookDocumentMetadataChangeEvent>;
 		export const onDidChangeNotebookCells: Event<NotebookCellsChangeEvent>;
 		export const onDidChangeCellOutputs: Event<NotebookCellOutputsChangeEvent>;
@@ -695,6 +712,15 @@ declare module 'vscode' {
 		 * @return A new status bar item.
 		 */
 		export function createCellStatusBarItem(cell: NotebookCell, alignment?: NotebookCellStatusBarAlignment, priority?: number): NotebookCellStatusBarItem;
+	}
+
+	export namespace window {
+		export const visibleNotebookEditors: NotebookEditor[];
+		export const onDidChangeVisibleNotebookEditors: Event<NotebookEditor[]>;
+		export const activeNotebookEditor: NotebookEditor | undefined;
+		export const onDidChangeActiveNotebookEditor: Event<NotebookEditor | undefined>;
+		export const onDidChangeNotebookEditorSelection: Event<NotebookEditorSelectionChangeEvent>;
+		export const onDidChangeNotebookEditorVisibleRanges: Event<NotebookEditorVisibleRangesChangeEvent>;
 	}
 
 	//#endregion
